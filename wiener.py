@@ -69,12 +69,15 @@ class Wiener:
         return self.dt*np.array(range(self.W.shape[0]))
     def coarsen(
             self,
-            n = 2):
+            n = 2,
+            nbatches = None):
+        if type(nbatches) == type(None):
+            nbatches = self.nbatches
         new_object = Wiener(
                 dt = n*self.dt,
                 nsteps = self.nsteps/n,
-                nbatches = self.nbatches,
+                nbatches = nbatches,
                 ntraj = self.ntraj)
-        new_object.W = self.W[::n]
+        new_object.W = self.W[::n, :nbatches]
         return new_object
 

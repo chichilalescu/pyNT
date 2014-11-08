@@ -23,32 +23,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from wiener import Wiener, get_t1ma_nm1
 
-class SDE1D(object):
-    def __init__(self):
-        return None
-    def EM(self, W, X0):
-        X = W.W.copy()
-        X[0] = X0
-        for t in range(1, W.nsteps + 1):
-            X[t] = (X[t-1]
-                  + self.drift(X[t-1])*W.dt
-                  + self.vol(  X[t-1])*(W.W[t] - W.W[t-1]))
-        return X
-
-class addSDE(SDE1D):
-    def __init__(
-            self,
-            c0,
-            c1):
-        self.c0 = c0
-        self.c1 = c1
-        return None
-    def drift(self, x):
-        return self.c0*x
-    def vol(self, x):
-        return self.c1
-
-class genericSDE(object):
+class SDE(object):
     def __init__(self):
         return None
     def EM(self, W, X0):
@@ -76,19 +51,19 @@ class genericSDE(object):
             exp_range = range(8)):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_axes([.1, .1, .8, .8])
+        bla1 = [Wiener(
+                nsteps = 2**8,
+                dt = h0 / (2**8),
+                nbatches = 200,
+                ntraj = ntraj) for j in range(self.get_noise_dimension())]
+        for bla in bla1:
+            bla.initialize()
+        if type(X0) == type(None):
+            X0 = np.zeros(self.get_system_dimension(), dtype = np.float)
         for M in [10, 20, 30, 40, 60, 100, 200]:
-            bla1 = [Wiener(
-                    nsteps = 2**8,
-                    dt = h0 / (2**8),
-                    nbatches = M,
-                    ntraj = ntraj) for j in range(self.get_noise_dimension())]
-            for bla in bla1:
-                bla.initialize()
-            wiener_paths = [[bla.coarsen(2**n)
+            wiener_paths = [[bla.coarsen(2**n, nbatches = M)
                              for bla in bla1]
                             for n in exp_range]
-            if type(X0) == type(None):
-                X0 = np.zeros(self.get_system_dimension(), dtype = np.float)
             dtlist = [wiener_paths[p][0].dt for p in range(len(wiener_paths))]
             xnumeric = [self.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
             err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
@@ -119,7 +94,7 @@ class genericSDE(object):
     def get_system_dimension():
         return None
 
-class dwell(genericSDE):
+class dwell(SDE):
     def __init__(
             self,
             c = 0.,
@@ -143,7 +118,7 @@ class dwell(genericSDE):
             x):
         return [np.array([0, self.noise])]
 
-class linSDE(genericSDE):
+class linSDE(SDE):
     def __init__(
             self,
             c0,
@@ -165,7 +140,7 @@ class linSDE(genericSDE):
     def get_system_dimension(self):
         return 1
 
-class addSDE(genericSDE):
+class addSDE(SDE):
     def __init__(
             self,
             c0,
