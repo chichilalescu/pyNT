@@ -116,7 +116,9 @@ class dwell(SDE):
     def vol(
             self,
             x):
-        return [np.array([0, self.noise])]
+        tmp = np.ones(x.shape, x.dtype)
+        return [np.array([np.zeros(x[0].shape, x.dtype)*0,
+                          np.ones (x[1].shape, x.dtype)*self.noise])]
 
 class linSDE(SDE):
     def __init__(
