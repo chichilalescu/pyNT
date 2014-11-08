@@ -83,6 +83,57 @@ class genericSDE(object):
             for j in range(len(W)):
                 X[t] += b[j][..., np.newaxis, np.newaxis]*(W[j].W[t] - W[j].W[t-1])
         return X
+    def get_evdt_vs_M(
+            self,
+            fig_name = 'tst',
+            ntraj = 32,
+            X0 = None,
+            h0 = 2.**(-3),
+            exp_range = range(8)):
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_axes([.1, .1, .8, .8])
+        for M in [10, 20, 30, 40, 60, 100, 200]:
+            bla1 = [Wiener(
+                    nsteps = 2**8,
+                    dt = h0 / (2**8),
+                    nbatches = M,
+                    ntraj = ntraj) for j in range(self.get_noise_dimension())]
+            for bla in bla1:
+                bla.initialize()
+            wiener_paths = [[bla.coarsen(2**n)
+                             for bla in bla1]
+                            for n in exp_range]
+            if type(X0) == type(None):
+                X0 = np.zeros(my_system.get_system_dimension(), dtype = np.float)
+            dtlist = [wiener_paths[p][0].dt for p in range(len(wiener_paths))]
+            xnumeric = [my_system.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
+            err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
+                   for p in range(len(xnumeric)-1)]
+            erri = [np.average(errij, axis = 1) for errij in err]
+            averr  = [np.average(err[p]) for p in range(len(err))]
+            sigma2 = [np.sum((averr[p] - erri[p])**2) / (M - 1)
+                      for p in range(len(err))]
+            deltae = [get_t1ma_nm1(0.99, M - 1)*(sigma2[p] / M)**.5
+                      for p in range(len(err))]
+            ax.errorbar(
+                    dtlist[:-1],
+                    averr,
+                    yerr = deltae,
+                    marker = '.',
+                    label = 'M = {0}'.format(M))
+        ax.plot(dtlist[:,-1], dtlist[:-1], label = '$\\Delta t$')
+        ax.plot(dtlist[:,-1], np.array(dtlist[:,-1])**.5, label = '$\\Delta t^{1/2}$')
+        ax.set_xlabel('$\\Delta t$')
+        ax.set_ylabel('$\\epsilon$')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.legend(loc = 'best')
+        fig.savefig(fig_name + '.pdf', format = 'pdf')
+        return dtlist
+    def get_noise_dimension():
+        return None
+    def get_system_dimension():
+        return None
 
 class dwell(genericSDE):
     def __init__(
