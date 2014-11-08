@@ -24,32 +24,70 @@ import matplotlib.pyplot as plt
 from wiener import Wiener, get_t1ma_nm1
 import SDE
 
-system = SDE.dwell(0, .5)
-
-T = 10.
-h0 = 1.
-substeps = 2**10
-
-bla1 = [Wiener(
-        nsteps = int(T / h0)*substeps,
-        dt = h0 / substeps,
+def get_probability(
+        c = 0.0,
+        T = 10.,
+        h0 = 1.,
+        substeps = 2**10,
         nbatches = 10,
-        ntraj = 64)]
-bla1[0].initialize()
-x = system.EM(bla1, np.array([.0, .0]))
+        ntraj = 64,
+        figname = 'dwell_PDF'):
+    system = SDE.dwell(c, .5)
 
-points = x[substeps*2:, 0].flatten()
+    T = 10.
+    h0 = 1.
+    substeps = 2**10
+
+    bla1 = [Wiener(
+            nsteps = int(T / h0)*substeps,
+            dt = h0 / substeps,
+            nbatches = 10,
+            ntraj = 64)]
+    bla1[0].initialize()
+    x = system.EM(bla1, np.array([.0, .0]))
+
+    points = x[substeps*2:, 0].flatten()
+
+    fig = plt.figure(figsize = (6, 6))
+    ax = fig.add_subplot(111)
+    hist, bins, bla = ax.hist(points,
+            histtype = 'step',
+            bins = 128,
+            normed = True)
+    probability = np.count_nonzero(points > 0) * (1./ points.size)
+    fig.suptitle(
+            'Probability density function for c = {0}.'.format(system.c))
+    ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(probability))
+    fig.savefig(figname + '.pdf', format = 'pdf')
+    return probability, hist, bins
+
+p00, h00, b00 = get_probability(
+        c = 0.0,
+        figname = 'dwell00_PDF')
+p03, h03, b03 = get_probability(
+        c = 0.3,
+        figname = 'dwell03_PDF')
+p06, h06, b06 = get_probability(
+        c = 0.6,
+        figname = 'dwell06_PDF')
+p10, h10, b10 = get_probability(
+        c = 1.0,
+        figname = 'dwell10_PDF')
 
 fig = plt.figure(figsize = (6, 6))
 ax = fig.add_subplot(111)
-ax.hist(points,
-        histtype = 'step',
-        bins = 128,
-        normed = True)
-ax.grid()
-fig.suptitle(
-        'Probability density function for c = {0}.'.format(system.c))
-ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] = {0:.2g}$'.format(
-                                        np.count_nonzero(points > 0) * (1./ points.size)))
+ax.plot(.5*(b00[1:] + b00[:-1]),
+        h00,
+        label = '$c = 0.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p00))
+ax.plot(.5*(b03[1:] + b03[:-1]),
+        h03,
+        label = '$c = 0.3$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p03))
+ax.plot(.5*(b03[1:] + b06[:-1]),
+        h06,
+        label = '$c = 0.6$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p06))
+ax.plot(.5*(b10[1:] + b10[:-1]),
+        h10,
+        label = '$c = 1.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p10))
+ax.legend(loc = 'best')
 fig.savefig('dwell_PDF.pdf', format = 'pdf')
 
