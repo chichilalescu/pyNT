@@ -26,7 +26,7 @@ import SDE
 bla = SDE.linSDE(1.0, 0.5)
 
 bla.get_evdt_vs_M(
-            fig_name = 'lin_evdt',
+            fig_name = 'figs/lin_evdt',
             ntraj = 64,
             X0 = np.array([1.]),
             h0 = .5,
@@ -35,7 +35,7 @@ bla.get_evdt_vs_M(
 bla = SDE.addSDE(1.0, 0.5)
 
 bla.get_evdt_vs_M(
-            fig_name = 'add_evdt',
+            fig_name = 'figs/add_evdt',
             ntraj = 64,
             X0 = np.array([1.]),
             h0 = .5,
@@ -44,7 +44,7 @@ bla.get_evdt_vs_M(
 bla = SDE.dwell(.0, .5)
 
 bla.get_evdt_vs_M(
-            fig_name = 'dwell_evdt',
+            fig_name = 'figs/dwell_evdt',
             ntraj = 64,
             X0 = np.array([0., .0]),
             h0 = 2.**(-3),

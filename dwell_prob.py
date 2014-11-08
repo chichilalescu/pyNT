@@ -63,16 +63,16 @@ def get_probability(
 
 p00, h00, b00 = get_probability(
         c = 0.0,
-        figname = 'dwell00_PDF')
+        figname = 'figs/dwell00_PDF')
 p03, h03, b03 = get_probability(
         c = 0.3,
-        figname = 'dwell03_PDF')
+        figname = 'figs/dwell03_PDF')
 p06, h06, b06 = get_probability(
         c = 0.6,
-        figname = 'dwell06_PDF')
+        figname = 'figs/dwell06_PDF')
 p10, h10, b10 = get_probability(
         c = 1.0,
-        figname = 'dwell10_PDF')
+        figname = 'figs/dwell10_PDF')
 
 fig = plt.figure(figsize = (6, 6))
 ax = fig.add_subplot(111)
@@ -89,5 +89,5 @@ ax.plot(.5*(b10[1:] + b10[:-1]),
         h10,
         label = '$c = 1.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p10))
 ax.legend(loc = 'best')
-fig.savefig('dwell_PDF.pdf', format = 'pdf')
+fig.savefig('figs/dwell_PDF.pdf', format = 'pdf')
 
