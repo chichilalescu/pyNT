@@ -20,6 +20,8 @@
 #######################################################################
 
 import numpy as np
+import matplotlib.pyplot as plt
+from wiener import Wiener, get_t1ma_nm1
 
 class SDE1D(object):
     def __init__(self):
@@ -32,24 +34,6 @@ class SDE1D(object):
                   + self.drift(X[t-1])*W.dt
                   + self.vol(  X[t-1])*(W.W[t] - W.W[t-1]))
         return X
-
-class linSDE(SDE1D):
-    def __init__(
-            self,
-            c0,
-            c1):
-        self.c0 = c0
-        self.c1 = c1
-        return None
-    def drift(self, x):
-        return self.c0*x
-    def vol(self, x):
-        return self.c1*x
-    def exact(self, W, X0):
-        time = W.get_time()
-        return X0*np.exp(
-                    (self.c0 - .5*self.c1**2)*time[:, np.newaxis, np.newaxis]
-                    + self.c1*W.W)
 
 class addSDE(SDE1D):
     def __init__(
@@ -81,7 +65,7 @@ class genericSDE(object):
                   + self.drift(X[t-1])*W[0].dt)
             b = self.vol(X[t-1])
             for j in range(len(W)):
-                X[t] += b[j][..., np.newaxis, np.newaxis]*(W[j].W[t] - W[j].W[t-1])
+                X[t] += b[j]*(W[j].W[t] - W[j].W[t-1])
         return X
     def get_evdt_vs_M(
             self,
@@ -104,9 +88,9 @@ class genericSDE(object):
                              for bla in bla1]
                             for n in exp_range]
             if type(X0) == type(None):
-                X0 = np.zeros(my_system.get_system_dimension(), dtype = np.float)
+                X0 = np.zeros(self.get_system_dimension(), dtype = np.float)
             dtlist = [wiener_paths[p][0].dt for p in range(len(wiener_paths))]
-            xnumeric = [my_system.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
+            xnumeric = [self.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
             err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
                    for p in range(len(xnumeric)-1)]
             erri = [np.average(errij, axis = 1) for errij in err]
@@ -121,8 +105,8 @@ class genericSDE(object):
                     yerr = deltae,
                     marker = '.',
                     label = 'M = {0}'.format(M))
-        ax.plot(dtlist[:,-1], dtlist[:-1], label = '$\\Delta t$')
-        ax.plot(dtlist[:,-1], np.array(dtlist[:,-1])**.5, label = '$\\Delta t^{1/2}$')
+        ax.plot(dtlist[:-1], dtlist[:-1], label = '$\\Delta t$')
+        ax.plot(dtlist[:-1], np.array(dtlist[:-1])**.5, label = '$\\Delta t^{1/2}$')
         ax.set_xlabel('$\\Delta t$')
         ax.set_ylabel('$\\epsilon$')
         ax.set_xscale('log')
@@ -158,4 +142,43 @@ class dwell(genericSDE):
             self,
             x):
         return [np.array([0, self.noise])]
+
+class linSDE(genericSDE):
+    def __init__(
+            self,
+            c0,
+            c1):
+        self.c0 = c0
+        self.c1 = c1
+        return None
+    def drift(self, x):
+        return self.c0*x[0]
+    def vol(self, x):
+        return [self.c1*x[0]]
+    def exact(self, W, X0):
+        time = W[0].get_time()
+        return X0*np.exp(
+                    (self.c0 - .5*self.c1**2)*time[:, np.newaxis, np.newaxis]
+                    + self.c1*W[0].W)
+    def get_noise_dimension(self):
+        return 1
+    def get_system_dimension(self):
+        return 1
+
+class addSDE(genericSDE):
+    def __init__(
+            self,
+            c0,
+            c1):
+        self.c0 = c0
+        self.c1 = c1
+        return None
+    def drift(self, x):
+        return self.c0*x[0]
+    def vol(self, x):
+        return [self.c1*np.ones(x[0].shape, x.dtype)]
+    def get_noise_dimension(self):
+        return 1
+    def get_system_dimension(self):
+        return 1
 
