@@ -33,18 +33,23 @@ substeps = 2**10
 bla1 = [Wiener(
         nsteps = int(T / h0)*substeps,
         dt = h0 / substeps,
-        nbatches = 20,
-        ntraj = 128)]
+        nbatches = 10,
+        ntraj = 64)]
 bla1[0].initialize()
 x = system.EM(bla1, np.array([.0, .0]))
 
+points = x[substeps*2:, 0].flatten()
+
 fig = plt.figure(figsize = (6, 6))
 ax = fig.add_subplot(111)
-ax.hist(x[substeps*2:, 0].flatten(),
+ax.hist(points,
         histtype = 'step',
         bins = 128,
-        normed = True,
-        cumulative = True)
+        normed = True)
 ax.grid()
-fig.savefig('tst.pdf', format = 'pdf')
+fig.suptitle(
+        'Probability density function for c = {0}.'.format(system.c))
+ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] = {0:.2g}$'.format(
+                                        np.count_nonzero(points > 0) * (1./ points.size)))
+fig.savefig('dwell_PDF.pdf', format = 'pdf')
 
