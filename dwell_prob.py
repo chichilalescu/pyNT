@@ -26,13 +26,6 @@ import SDE
 
 system = SDE.dwell(0, .5)
 
-#get_evdt_vs_M(
-#        system,
-#        ntraj = 128,
-#        X0 = np.array([0, 0]).astype(np.float),
-#        h0 = 1.,
-#        exp_range = range(10))
-
 T = 10.
 h0 = 1.
 substeps = 2**10
