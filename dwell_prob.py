@@ -34,15 +34,11 @@ def get_probability(
         figname = 'dwell_PDF'):
     system = SDE.dwell(c, .5)
 
-    T = 10.
-    h0 = 1.
-    substeps = 2**10
-
     bla1 = Wiener(
             nsteps = int(T / h0)*substeps,
             dt = h0 / substeps,
             noise_dimension = 1,
-            solution_shape = [nbatches, 64])
+            solution_shape = [nbatches, ntraj])
     bla1.initialize()
     x = system.EM(bla1, np.array([.0, .0]))
 
