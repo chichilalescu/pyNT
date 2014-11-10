@@ -42,7 +42,7 @@ def get_probability(
             nsteps = int(T / h0)*substeps,
             dt = h0 / substeps,
             noise_dimension = 1,
-            solution_shape = [20, 64])
+            solution_shape = [nbatches, 64])
     bla1.initialize()
     x = system.EM(bla1, np.array([.0, .0]))
 
