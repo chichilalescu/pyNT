@@ -31,11 +31,12 @@ bla = sde(
         a = [x],
         b = [[x/2]])
 bla.get_evdt_vs_M(
-        fig_name = 'figs/lin_evdt',
+        fig_name = 'figs/lin_evdt_EM',
         ntraj = 64,
         X0 = np.ones(1,).astype(np.float),
         h0 = .5,
-        exp_range = range(8))
+        exp_range = range(8),
+        solver = 'EM')
 
 bla = sde(
         x = [x],

@@ -24,6 +24,10 @@ import sympy as sp
 import matplotlib.pyplot as plt
 from wiener import Wiener, get_t1ma_nm1
 
+def Lj(x, a, b, f, j):
+    return sum(b[k][j]*sp.diff(f, x[k])
+               for k in range(len(x)))
+
 class base_SDE(object):
     def __init__(self):
         return None
@@ -40,13 +44,45 @@ class base_SDE(object):
             for j in range(W.noise_dimension):
                 X[t] += b[:, j]*(W.W[t, j] - W.W[t-1, j])
         return X
+    def Milstein(self, W, X0):
+        d = self.get_system_dimension()
+        m = self.get_noise_dimension()
+        X = np.zeros(tuple([W.W.shape[0]] +
+                           list(X0.shape) +
+                           list(W.solution_shape)),
+                     X0.dtype)
+        X[0, :] = X0.reshape(X0.shape + (1,)*len(W.solution_shape))
+        ljb = []
+        for i in range(d):
+            ljb.append([])
+            for j1 in range(m):
+                ljb[i].append([sp.utilities.lambdify(
+                                   tuple(self.x),
+                                   Lj(self.x, self.a, self.b, self.b[i][j2], j1),
+                                   np)
+                               for j2 in range(m)])
+        for t in range(1, W.nsteps+1):
+            Jj = (W.W[t] - W.W[t-1])
+            Jj0, J0j, Jjj, Ijj = W.get_jj(Jj)
+            b = self.vol(X[t-1])
+            X[t] = (X[t-1] +
+                    W.Delta*self.drift(X[t-1]) +
+                    np.array([sum(Jj[j]*b[i, j]
+                                  for j in range(m))
+                              for i in range(d)]) +
+                    np.array([sum(sum(Ijj[j1,j2]*ljb[i][j1][j2](*tuple(X[t-1]))
+                                      for j1 in range(m))
+                                  for j2 in range(m))
+                              for i in range(d)]))
+        return X
     def get_evdt_vs_M(
             self,
             fig_name = 'tst',
             ntraj = 32,
             X0 = None,
             h0 = 2.**(-3),
-            exp_range = range(8)):
+            exp_range = range(8),
+            solver = 'EM'):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_axes([.1, .1, .8, .8])
         bla = Wiener(
@@ -68,7 +104,7 @@ class base_SDE(object):
                 new_w.shape = [w.noise_dimension] + new_w.solution_shape
                 wiener_paths.append(new_w)
             dtlist = [wiener_paths[p].dt for p in range(len(wiener_paths))]
-            xnumeric = [self.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
+            xnumeric = [getattr(self, solver)(wiener_paths[p], X0) for p in range(len(wiener_paths))]
             err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
                    for p in range(len(xnumeric)-1)]
             erri = [np.average(errij, axis = 1) for errij in err]
@@ -89,6 +125,7 @@ class base_SDE(object):
         ax.set_ylabel('$\\epsilon$')
         ax.set_xscale('log')
         ax.set_yscale('log')
+        ax.set_title('Error vs timestep for ' + solver)
         ax.legend(loc = 'best')
         fig.savefig(fig_name + '.pdf', format = 'pdf')
         return dtlist
@@ -104,13 +141,13 @@ class sde(base_SDE):
             a = None,
             b = None):
         self.x = x
-        self.a = a
-        self.b = b
-        self.drift_func = [sp.utilities.lambdify(tuple(self.x), sp.sympify(ak), np)
+        self.a = [sp.sympify(ak) for ak in a]
+        self.b = [[sp.sympify(bkj) for bkj in bk] for bk in b]
+        self.drift_func = [sp.utilities.lambdify(tuple(self.x), ak,  np)
                            for ak in self.a]
-        self.vol_func = [[sp.utilities.lambdify(tuple(self.x), sp.sympify(bkj), np)
-                          for bkj in bk]
-                         for bk in b]
+        self.vol_func   =[[sp.utilities.lambdify(tuple(self.x), bkj, np)
+                           for bkj in bk]
+                          for bk in b]
         return None
     def drift(self, x):
         return np.array([self.drift_func[k](*tuple(x))
