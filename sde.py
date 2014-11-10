@@ -75,6 +75,30 @@ class base_SDE(object):
                                   for j2 in range(m))
                               for i in range(d)]))
         return X
+    def explicit_1p0(self, W, X0):
+        d = self.get_system_dimension()
+        m = self.get_noise_dimension()
+        X = np.zeros(tuple([W.W.shape[0]] +
+                           list(X0.shape) +
+                           list(W.solution_shape)),
+                     X0.dtype)
+        X[0, :] = X0.reshape(X0.shape + (1,)*len(W.solution_shape))
+        aa = np.zeros(X0.shape).astype(X0.dtype)
+        bb = np.zeros((d, m) + X0.shape[1:]).astype(X0.dtype)
+        for t in range(1, W.nsteps+1):
+            Jj = W.W[t] - W.W[t-1]
+            Jj0, J0j, Jjj, Ijj = W.get_jj(Jj)
+            aa = self.drift(X[t-1])
+            bb = self.vol(  X[t-1])
+            X[t] = X[t-1] + W.Delta*aa
+            y = [X[t] + bb[:, j]*W.sqrtD
+                 for j in range(m)]
+            X[t] += (sum(Jj[j]*bb[:, j] for j in range(m))
+                         + np.array([sum(sum(Ijj[j1,j2]*(self.vol_func[i][j2](*tuple(y[j1])) - bb[i, j2])
+                                             for j1 in range(m))
+                                         for j2 in range(m))
+                                     for i in range(d)])/W.sqrtD)
+        return X
     def get_evdt_vs_M(
             self,
             fig_name = 'tst',
@@ -82,7 +106,7 @@ class base_SDE(object):
             X0 = None,
             h0 = 2.**(-3),
             exp_range = range(8),
-            solver = 'EM'):
+            solver = ['Milstein', 'explicit_1p0']):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_axes([.1, .1, .8, .8])
         bla = Wiener(
@@ -104,9 +128,12 @@ class base_SDE(object):
                 new_w.shape = [w.noise_dimension] + new_w.solution_shape
                 wiener_paths.append(new_w)
             dtlist = [wiener_paths[p].dt for p in range(len(wiener_paths))]
-            xnumeric = [getattr(self, solver)(wiener_paths[p], X0) for p in range(len(wiener_paths))]
-            err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
-                   for p in range(len(xnumeric)-1)]
+            random_state = np.random.get_state()
+            xnumeric0 = [getattr(self, solver[0])(wiener_paths[p], X0) for p in range(len(wiener_paths))]
+            np.random.set_state(random_state)
+            xnumeric1 = [getattr(self, solver[1])(wiener_paths[p], X0) for p in range(len(wiener_paths))]
+            err = [np.abs(xnumeric0[p][-1] - xnumeric1[p][-1]) / np.abs(xnumeric0[p][-1])
+                   for p in range(len(xnumeric0))]
             erri = [np.average(errij, axis = 1) for errij in err]
             averr  = [np.average(err[p]) for p in range(len(err))]
             sigma2 = [np.sum((averr[p] - erri[p])**2) / (M - 1)
@@ -114,7 +141,7 @@ class base_SDE(object):
             deltae = [get_t1ma_nm1(0.99, M - 1)*(sigma2[p] / M)**.5
                       for p in range(len(err))]
             ax.errorbar(
-                    dtlist[:-1],
+                    dtlist,
                     averr,
                     yerr = deltae,
                     marker = '.',
@@ -125,7 +152,7 @@ class base_SDE(object):
         ax.set_ylabel('$\\epsilon$')
         ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.set_title('Error vs timestep for ' + solver)
+        ax.set_title('Distance between {0} and {1} vs time step'.format(solver[0], solver[1]))
         ax.legend(loc = 'best')
         fig.savefig(fig_name + '.pdf', format = 'pdf')
         return dtlist
