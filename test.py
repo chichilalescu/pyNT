@@ -23,10 +23,10 @@ import numpy as np
 import sympy as sp
 
 from wiener import Wiener
-import SDE
+from sde import sde
 
 x = sp.Symbol('x')
-bla = SDE.spSDE(
+bla = sde(
         x = [x],
         a = [x],
         b = [[x/2]])
@@ -37,7 +37,7 @@ bla.get_evdt_vs_M(
         h0 = .5,
         exp_range = range(8))
 
-bla = SDE.spSDE(
+bla = sde(
         x = [x],
         a = [x],
         b = [[.5]])
@@ -51,7 +51,7 @@ bla.get_evdt_vs_M(
 c = 0.0
 v = sp.Symbol('v')
 u = x**2 * (x**2 - 1 + c*x)
-bla = SDE.spSDE(
+bla = sde(
         x = [x, v],
         a = [v, -u.diff(x) - v],
         b = [[.0], [.5]])
