@@ -135,10 +135,10 @@ class linSDE(SDE):
     def vol(self, x):
         return [self.c1*x[0]]
     def exact(self, W, X0):
-        time = W[0].get_time()
+        time = W.get_time()
         return X0*np.exp(
                     (self.c0 - .5*self.c1**2)*time[:, np.newaxis, np.newaxis]
-                    + self.c1*W[0].W)
+                    + self.c1*W.W)
     def get_noise_dimension(self):
         return 1
     def get_system_dimension(self):
