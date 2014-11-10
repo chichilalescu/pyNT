@@ -27,20 +27,17 @@ class SDE(object):
     def __init__(self):
         return None
     def EM(self, W, X0):
-        X = np.zeros(tuple([W[0].W.shape[0]] +
+        X = np.zeros(tuple([W.W.shape[0]] +
                            list(X0.shape) +
-                           list(W[0].W.shape[1:])),
+                           list(W.solution_shape)),
                      X0.dtype)
-        for j in range(len(W)):
-            assert(W[j].dt == W[0].dt)
-            assert(W[j].W.shape == W[0].W.shape)
-        X[0] = X0[..., np.newaxis, np.newaxis]
-        for t in range(1, W[0].nsteps + 1):
+        X[0, :] = X0.reshape(X0.shape + (1,)*len(W.solution_shape))
+        for t in range(1, W.nsteps + 1):
             X[t] = (X[t-1]
-                  + self.drift(X[t-1])*W[0].dt)
+                  + self.drift(X[t-1])*W.dt)
             b = self.vol(X[t-1])
-            for j in range(len(W)):
-                X[t] += b[j]*(W[j].W[t] - W[j].W[t-1])
+            for j in range(W.noise_dimension):
+                X[t] += b[j]*(W.W[t, j] - W.W[t-1, j])
         return X
     def get_evdt_vs_M(
             self,

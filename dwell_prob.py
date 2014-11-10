@@ -38,12 +38,12 @@ def get_probability(
     h0 = 1.
     substeps = 2**10
 
-    bla1 = [Wiener(
+    bla1 = Wiener(
             nsteps = int(T / h0)*substeps,
             dt = h0 / substeps,
-            nbatches = 10,
-            ntraj = 64)]
-    bla1[0].initialize()
+            noise_dimension = 1,
+            solution_shape = [20, 64])
+    bla1.initialize()
     x = system.EM(bla1, np.array([.0, .0]))
 
     points = x[substeps*2:, 0].flatten()
