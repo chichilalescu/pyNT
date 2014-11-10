@@ -46,20 +46,27 @@ class Wiener:
             self,
             dt = 1.,
             nsteps = 128,
-            nbatches = 20,
-            ntraj = 16):
+            noise_dimension = 1,
+            solution_shape = [20, 16],
+            p = 5):
         self.dt = dt
         self.nsteps = nsteps
-        self.nbatches = nbatches
-        self.ntraj = ntraj
+        if len(solution_shape) == 2:
+            self.nbatches = solution_shape[0]
+            self.ntraj = solution_shape[1]
+        self.noise_dimension = noise_dimension
+        self.shape = [noise_dimension] + solution_shape
+        self.solution_shape = solution_shape
+        self.p = p
         return None
     def initialize(
             self,
             rseed = None):
         np.random.seed(rseed)
-        self.dW = np.sqrt(self.dt)*np.random.randn(self.nsteps, self.nbatches, self.ntraj)
+        self.dW = np.sqrt(self.dt)*np.random.randn(
+                *tuple([self.nsteps] + self.shape))
         self.W = np.zeros(
-                (self.nsteps + 1, self.nbatches, self.ntraj),
+                tuple([self.nsteps + 1] + self.shape),
                 dtype = self.dW.dtype)
         for t in range(self.nsteps):
             self.W[t+1] = self.W[t] + self.dW[t]
@@ -69,15 +76,13 @@ class Wiener:
         return self.dt*np.array(range(self.W.shape[0]))
     def coarsen(
             self,
-            n = 2,
-            nbatches = None):
-        if type(nbatches) == type(None):
-            nbatches = self.nbatches
+            n = 2):
         new_object = Wiener(
                 dt = n*self.dt,
                 nsteps = self.nsteps/n,
-                nbatches = nbatches,
-                ntraj = self.ntraj)
-        new_object.W = self.W[::n, :nbatches]
+                noise_dimension = self.noise_dimension,
+                solution_shape = self.solution_shape,
+                p = self.p)
+        new_object.W = self.W[::n]
         return new_object
 

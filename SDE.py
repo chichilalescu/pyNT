@@ -27,20 +27,17 @@ class SDE(object):
     def __init__(self):
         return None
     def EM(self, W, X0):
-        X = np.zeros(tuple([W[0].W.shape[0]] +
+        X = np.zeros(tuple([W.W.shape[0]] +
                            list(X0.shape) +
-                           list(W[0].W.shape[1:])),
+                           list(W.solution_shape)),
                      X0.dtype)
-        for j in range(len(W)):
-            assert(W[j].dt == W[0].dt)
-            assert(W[j].W.shape == W[0].W.shape)
-        X[0] = X0[..., np.newaxis, np.newaxis]
-        for t in range(1, W[0].nsteps + 1):
+        X[0, :] = X0.reshape(X0.shape + (1,)*len(W.solution_shape))
+        for t in range(1, W.nsteps + 1):
             X[t] = (X[t-1]
-                  + self.drift(X[t-1])*W[0].dt)
+                  + self.drift(X[t-1])*W.dt)
             b = self.vol(X[t-1])
-            for j in range(len(W)):
-                X[t] += b[j]*(W[j].W[t] - W[j].W[t-1])
+            for j in range(W.noise_dimension):
+                X[t] += b[j]*(W.W[t, j] - W.W[t-1, j])
         return X
     def get_evdt_vs_M(
             self,
@@ -51,20 +48,25 @@ class SDE(object):
             exp_range = range(8)):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_axes([.1, .1, .8, .8])
-        bla1 = [Wiener(
+        bla = Wiener(
                 nsteps = 2**8,
                 dt = h0 / (2**8),
-                nbatches = 200,
-                ntraj = ntraj) for j in range(self.get_noise_dimension())]
-        for bla in bla1:
-            bla.initialize()
+                noise_dimension = self.get_noise_dimension(),
+                solution_shape = [200, ntraj])
+        bla.initialize()
         if type(X0) == type(None):
             X0 = np.zeros(self.get_system_dimension(), dtype = np.float)
+        full_wiener_paths = [bla.coarsen(2**n)
+                        for n in exp_range]
         for M in [10, 20, 30, 40, 60, 100, 200]:
-            wiener_paths = [[bla.coarsen(2**n, nbatches = M)
-                             for bla in bla1]
-                            for n in exp_range]
-            dtlist = [wiener_paths[p][0].dt for p in range(len(wiener_paths))]
+            wiener_paths = []
+            for w in full_wiener_paths:
+                new_w = w.coarsen(n = 1)
+                new_w.W = w.W[:, :, :M]
+                new_w.solution_shape = [M, ntraj]
+                new_w.shape = [w.noise_dimension] + new_w.solution_shape
+                wiener_paths.append(new_w)
+            dtlist = [wiener_paths[p].dt for p in range(len(wiener_paths))]
             xnumeric = [self.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
             err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
                    for p in range(len(xnumeric)-1)]
