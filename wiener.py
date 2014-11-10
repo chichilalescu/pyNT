@@ -58,6 +58,13 @@ class Wiener:
         self.shape = [noise_dimension] + solution_shape
         self.solution_shape = solution_shape
         self.p = p
+        self.r     = np.arange(1,self.p+1, 1).astype(np.float)
+        for i in range(len(self.shape)):
+            self.r = np.expand_dims(self.r, axis = len(self.r.shape))
+        self.rho   = 1/12.        - .5*np.sum(1/self.r**2, axis = 0)/np.pi**2
+        self.alpha = np.pi**2/180 - .5*np.sum(1/self.r**4, axis = 0)/np.pi**2
+        self.Delta = dt
+        self.sqrtD = np.sqrt(self.Delta)
         return None
     def initialize(
             self,
@@ -85,4 +92,26 @@ class Wiener:
                 p = self.p)
         new_object.W = self.W[::n]
         return new_object
+    def get_jj(self, Jj):
+        # Gaussian
+        zeta  = np.random.randn(*tuple([self.p] + list(Jj.shape)))
+        eta   = np.random.randn(*tuple([self.p] + list(Jj.shape)))
+        mu    = np.random.randn(*tuple(Jj.shape))
+        phi   = np.random.randn(*tuple(Jj.shape))
+        # additional quantities
+        a = (- np.sqrt(2*self.Delta) * np.sum(eta / self.r, axis=0) / np.pi
+             - (2*np.sqrt(self.Delta*self.rho)*mu))
+        A = np.sum((zeta[:, :, np.newaxis]*eta[:, np.newaxis, :] - eta[:, :, np.newaxis]*zeta[:, np.newaxis, :])
+                   / self.r[:, np.newaxis], axis = 0) / (2*np.pi)
+        # multiple Stratonovich integrals
+        Jj0  =  self.Delta*(Jj + a) / 2
+        J0j  =  self.Delta*(Jj - a) / 2
+        Jjj  =  (Jj[:, np.newaxis]*Jj[np.newaxis, :] / 2
+              - (a [np.newaxis, :]*Jj[:, np.newaxis] - Jj[np.newaxis, :]*a[:, np.newaxis])/2
+              +  self.Delta*A)
+        # multiple Ito integrals
+        Ijj = Jjj.copy()
+        for j in range(Ijj.shape[0]):
+            Ijj[j,j] -= .5*self.Delta
+        return Jj0, J0j, Jjj, Ijj
 
