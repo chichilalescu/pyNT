@@ -20,9 +20,11 @@
 #######################################################################
 
 import numpy as np
+import sympy as sp
 import matplotlib.pyplot as plt
+
 from wiener import Wiener, get_t1ma_nm1
-import SDE
+from sde import sde
 
 def get_probability(
         c = 0.0,
@@ -32,7 +34,13 @@ def get_probability(
         nbatches = 10,
         ntraj = 64,
         figname = 'dwell_PDF'):
-    system = SDE.dwell(c, .5)
+    x = sp.Symbol('x')
+    v = sp.Symbol('v')
+    u = x**2 * (x**2 - 1 + c*x)
+    system = sde(
+            x = [x, v],
+            a = [v, -u.diff(x) - v],
+            b = [[.0], [.5]])
 
     bla1 = Wiener(
             nsteps = int(T / h0)*substeps,
@@ -52,7 +60,7 @@ def get_probability(
             normed = True)
     probability = np.count_nonzero(points > 0) * (1./ points.size)
     fig.suptitle(
-            'Probability density function for c = {0}.'.format(system.c))
+            'Probability density function for c = {0}.'.format(c))
     ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(probability))
     fig.savefig(figname + '.pdf', format = 'pdf')
     return probability, hist, bins
