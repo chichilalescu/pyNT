@@ -20,6 +20,7 @@
 #######################################################################
 
 import numpy as np
+import sympy as sp
 import matplotlib.pyplot as plt
 from wiener import Wiener, get_t1ma_nm1
 
@@ -37,7 +38,7 @@ class SDE(object):
                   + self.drift(X[t-1])*W.dt)
             b = self.vol(X[t-1])
             for j in range(W.noise_dimension):
-                X[t] += b[j]*(W.W[t, j] - W.W[t-1, j])
+                X[t] += b[:, j]*(W.W[t, j] - W.W[t-1, j])
         return X
     def get_evdt_vs_M(
             self,
@@ -160,4 +161,33 @@ class addSDE(SDE):
         return 1
     def get_system_dimension(self):
         return 1
+
+class spSDE(SDE):
+    def __init__(
+            self,
+            x = None,
+            a = None,
+            b = None):
+        self.x = x
+        self.a = a
+        self.b = b
+        self.drift_func = [sp.utilities.lambdify(tuple(self.x), sp.sympify(ak), np)
+                           for ak in self.a]
+        self.vol_func = [[sp.utilities.lambdify(tuple(self.x), sp.sympify(bkj), np)
+                          for bkj in bk]
+                         for bk in b]
+        return None
+    def drift(self, x):
+        return np.array([self.drift_func[k](*tuple(x))
+                         for k in range(len(self.x))])
+    def vol(self, x):
+        result = np.zeros((x.shape[0],) + (len(self.b[0]),) + x.shape[1:], dtype = x.dtype)
+        for k in range(result.shape[0]):
+            for j in range(result.shape[1]):
+                result[k, j] = self.vol_func[k][j](*tuple(x))
+        return result
+    def get_noise_dimension(self):
+        return len(self.b[0])
+    def get_system_dimension(self):
+        return len(self.x)
 

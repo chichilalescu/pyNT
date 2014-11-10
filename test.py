@@ -20,33 +20,45 @@
 #######################################################################
 
 import numpy as np
+import sympy as sp
+
 from wiener import Wiener
 import SDE
 
-bla = SDE.linSDE(1.0, 0.5)
-
+x = sp.Symbol('x')
+bla = SDE.spSDE(
+        x = [x],
+        a = [x],
+        b = [[x/2]])
 bla.get_evdt_vs_M(
-            fig_name = 'figs/lin_evdt',
-            ntraj = 64,
-            X0 = np.array([1.]),
-            h0 = .5,
-            exp_range = range(8))
+        fig_name = 'figs/lin_evdt',
+        ntraj = 64,
+        X0 = np.ones(1,).astype(np.float),
+        h0 = .5,
+        exp_range = range(8))
 
-bla = SDE.addSDE(1.0, 0.5)
-
+bla = SDE.spSDE(
+        x = [x],
+        a = [x],
+        b = [[.5]])
 bla.get_evdt_vs_M(
-            fig_name = 'figs/add_evdt',
-            ntraj = 64,
-            X0 = np.array([1.]),
-            h0 = .5,
-            exp_range = range(8))
+        fig_name = 'figs/add_evdt',
+        ntraj = 64,
+        X0 = np.ones(1,).astype(np.float),
+        h0 = .5,
+        exp_range = range(8))
 
-bla = SDE.dwell(.0, .5)
-
+c = 0.0
+v = sp.Symbol('v')
+u = x**2 * (x**2 - 1 + c*x)
+bla = SDE.spSDE(
+        x = [x, v],
+        a = [v, -u.diff(x) - v],
+        b = [[.0], [.5]])
 bla.get_evdt_vs_M(
-            fig_name = 'figs/dwell_evdt',
-            ntraj = 64,
-            X0 = np.array([0., .0]),
-            h0 = 2.**(-3),
-            exp_range = range(12))
+        fig_name = 'figs/dwell_evdt',
+        ntraj = 32,
+        X0 = np.array([0., .0]).astype(np.float),
+        h0 = .5,
+        exp_range = range(8))
 
