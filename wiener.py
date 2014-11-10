@@ -77,8 +77,6 @@ class Wiener:
     def coarsen(
             self,
             n = 2):
-        if type(nbatches) == type(None):
-            nbatches = self.nbatches
         new_object = Wiener(
                 dt = n*self.dt,
                 nsteps = self.nsteps/n,

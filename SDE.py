@@ -48,20 +48,25 @@ class SDE(object):
             exp_range = range(8)):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_axes([.1, .1, .8, .8])
-        bla1 = [Wiener(
+        bla = Wiener(
                 nsteps = 2**8,
                 dt = h0 / (2**8),
-                nbatches = 200,
-                ntraj = ntraj) for j in range(self.get_noise_dimension())]
-        for bla in bla1:
-            bla.initialize()
+                noise_dimension = self.get_noise_dimension(),
+                solution_shape = [200, ntraj])
+        bla.initialize()
         if type(X0) == type(None):
             X0 = np.zeros(self.get_system_dimension(), dtype = np.float)
+        full_wiener_paths = [bla.coarsen(2**n)
+                        for n in exp_range]
         for M in [10, 20, 30, 40, 60, 100, 200]:
-            wiener_paths = [[bla.coarsen(2**n, nbatches = M)
-                             for bla in bla1]
-                            for n in exp_range]
-            dtlist = [wiener_paths[p][0].dt for p in range(len(wiener_paths))]
+            wiener_paths = []
+            for w in full_wiener_paths:
+                new_w = w.coarsen(n = 1)
+                new_w.W = w.W[:, :, :M]
+                new_w.solution_shape = [M, ntraj]
+                new_w.shape = [w.noise_dimension] + new_w.solution_shape
+                wiener_paths.append(new_w)
+            dtlist = [wiener_paths[p].dt for p in range(len(wiener_paths))]
             xnumeric = [self.EM(wiener_paths[p], X0) for p in range(len(wiener_paths))]
             err = [np.abs(xnumeric[p+1][-1] - xnumeric[p][-1]) / np.abs(xnumeric[p][-1])
                    for p in range(len(xnumeric)-1)]
