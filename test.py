@@ -84,30 +84,19 @@ if test_ode:
             x = [x, y, z],
             f = lorenz_rhs)
     X0 = 10*np.random.random((3, 128))
-    evdt1 = bla.get_evdt(
-            X0 = X0,
-            solver = ['Euler', 'Taylor2'])
-    evdt2 = bla.get_evdt(
-            X0 = X0,
-            solver = ['Heun', 'Taylor2'])
     fig = plt.figure(figsize = (6,6))
     ax = fig.add_subplot(111)
-    ax.errorbar(
-            evdt1[:, 0],
-            evdt1[:, 2],
-            yerr = [evdt1[:, 1], evdt1[:, 3]],
-            label = 'Euler vs Taylor 2')
-    ax.errorbar(
-            evdt2[:, 0],
-            evdt2[:, 2],
-            yerr = [evdt2[:, 1], evdt2[:, 3]],
-            label = 'Heun vs Taylor 2')
-    ax.plot(evdt1[:, 0],
-            evdt1[:, 0],
-            label = '$\\Delta t$')
-    ax.plot(evdt1[:, 0],
-            evdt1[:, 0]**2,
-            label = '$\\Delta t^2$')
+    for solver in [['Euler', 'Taylor2'],
+                   ['Heun',  'Taylor2'],
+                   ['cRK',   'Taylor4']]:
+        evdt = bla.get_evdt(
+                X0 = X0,
+                solver = solver)
+        ax.errorbar(
+                evdt[:, 0],
+                evdt[:, 2],
+                yerr = [evdt[:, 1], evdt[:, 3]],
+                label = '{0} vs {1}'.format(solver[0], solver[1]))
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.legend(loc = 'best')

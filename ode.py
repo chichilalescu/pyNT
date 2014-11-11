@@ -43,6 +43,17 @@ class base_ODE(object):
             k2 = self.rhs(X[t-1] + h*k1)
             X[t] = X[t-1] + h*(k1 + k2)/2
         return X
+    def cRK(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            k1 = self.rhs(X[t-1])
+            k2 = self.rhs(X[t-1] + h*k1/2)
+            k3 = self.rhs(X[t-1] + h*k2/2)
+            k4 = self.rhs(X[t-1] + h*k3)
+            X[t] = X[t-1] + h*(k1 + 2*(k2+k3) + k4)/6
+        return X
     def Taylor2(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
                      X0.dtype)
@@ -60,6 +71,28 @@ class base_ODE(object):
             X[t] = (X[t-1]
                     + velnum*    h
                     + accnum*(.5*h**2))
+        return X
+    def Taylor4(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        d = len(self.x)
+        # copy list explicitly
+        diffx    = [[self.lx[i] for i in range(d)]]
+        diffxnum = [[sp.utilities.lambdify(tuple(self.x), self.lx[i], np)
+                     for i in range(d)]]
+        for n in range(4):
+            newdiff = [sum(self.lx[j]*diffx[-1][i].diff(self.x[j])
+                           for j in range(d))
+                       for i in range(d)]
+            diffx.append(newdiff)
+            diffxnum.append([sp.utilities.lambdify(tuple(self.x),diffx[-1][i], np)
+                             for i in range(d)])
+        for t in range(1, nsteps+1):
+            terms = [np.array([diffxnum[i][j](*tuple(X[t-1]))
+                               for j in range(d)])*(h**(i+1))/sp.factorial(i+1)
+                     for i in range(4)]
+            X[t] = X[t-1] + sum(terms)
         return X
     def get_evdt(
             self,
