@@ -114,4 +114,54 @@ class Wiener:
         for j in range(Ijj.shape[0]):
             Ijj[j,j] -= .5*self.Delta
         return Jj0, J0j, Jjj, Ijj
+    def get_jjj(self, Jj):
+        # Gaussian
+        zeta  = np.random.randn(*tuple([self.p] + list(Jj.shape)))
+        eta   = np.random.randn(*tuple([self.p] + list(Jj.shape)))
+        mu    = np.random.randn(*tuple(Jj.shape))
+        phi   = np.random.randn(*tuple(Jj.shape))
+        # additional quantities
+        a = (- np.sqrt(2*self.Delta) * np.sum(eta / self.r,      axis=0) / np.pi
+             - (2*np.sqrt(self.Delta*self.rho  )*mu))
+        b = (  np.sqrt(self.Delta/2) * np.sum(eta / (self.r**2), axis=0)
+             + (  np.sqrt(self.Delta*self.alpha)*phi))
+        A = np.sum((zeta[:, :, np.newaxis]* eta[:, np.newaxis, :] - eta[:, :, np.newaxis]*zeta[:, np.newaxis, :])
+                   / self.r     [:, np.newaxis], axis = 0) / (2*np.pi)
+        B = np.sum((zeta[:, :, np.newaxis]*zeta[:, np.newaxis, :] + eta[:, :, np.newaxis]* eta[:, np.newaxis, :])
+                   / (self.r**2)[:, np.newaxis], axis = 0) / (4*np.pi**2)
+        C = np.zeros(B.shape, B.dtype)
+        for i in range(self.p):
+            for k in range(self.p):
+                if not k == i:
+                    C -= ((self.r[i] / (self.r[i]**2 - self.r[k]**2))
+                        * (zeta[i, :, np.newaxis]*zeta[k, np.newaxis, :]/self.r[k]
+                         - eta [i, :, np.newaxis]* eta[k, np.newaxis, :]*self.r[k]/self.r[i]))
+        C /= 2*np.pi**2
+        # multiple Stratonovich integrals
+        Jj0  =  self.Delta*(Jj + a) / 2
+        J0j  =  self.Delta*(Jj - a) / 2
+        Jjj  =  (Jj[:, np.newaxis]*Jj[np.newaxis, :] / 2
+              - (a [np.newaxis, :]*Jj[:, np.newaxis] - Jj[np.newaxis, :]*a[:, np.newaxis])/2
+              +  self.Delta*A)
+        J0j0 =  self.Delta**2*(Jj/6 -  b/np.pi)
+        Jj00 =  self.Delta**2*(Jj/6 + b/(2*np.pi) + a/4)
+        J00j =  self.Delta**2*(Jj/6 + b/(2*np.pi) - a/4)
+        Jj0j = (self.Delta*Jj[:, np.newaxis]*Jj[np.newaxis, :]/6
+              + a[:, np.newaxis]*J0j[np.newaxis, :]/2
+              + self.Delta*(b[:, np.newaxis]*Jj[np.newaxis, :] + Jj[:, np.newaxis]*b[np.newaxis, :]) / (2*np.pi)
+              - self.Delta**2 * B
+              - self.Delta*Jj[:, np.newaxis]*a[np.newaxis, :] / 4)
+        J0jj = (self.Delta*Jj[:, np.newaxis]*Jj[np.newaxis, :]/6
+              - self.Delta*Jj[:, np.newaxis]*a[np.newaxis, :]/4
+              + self.Delta*(-2*b[:, np.newaxis]*Jj[np.newaxis, :] + Jj[:, np.newaxis]*b[np.newaxis, :]) / (2*np.pi)
+              + self.Delta**2 * (B + C + .5*A))
+        Jjj0 = (self.Delta*Jj[:, np.newaxis]*Jj[np.newaxis, :]/2
+              - self.Delta*(Jj[:, np.newaxis]*a[np.newaxis, :] - a[:, np.newaxis]*Jj[np.newaxis, :]) / 2
+              + self.Delta**2 * A
+              - Jj0j - J0jj)
+        # multiple Ito integrals
+        Ijj = Jjj.copy()
+        for j in range(Ijj.shape[0]):
+            Ijj[j,j] -= .5*self.Delta
+        return Jj0, J0j, Jjj, Jjj0, Ijj
 

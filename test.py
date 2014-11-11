@@ -26,39 +26,42 @@ from wiener import Wiener
 from sde import sde
 
 x = sp.Symbol('x')
-bla = sde(
-        x = [x],
-        a = [x],
-        b = [[x/2, sp.sin(x)/3]])
-bla.get_evdt_vs_M(
-        fig_name = 'figs/extra_tst',
-        ntraj = 64,
-        X0 = np.ones(1,).astype(np.float),
-        h0 = .5,
-        exp_range = range(8))
 
 #bla = sde(
 #        x = [x],
 #        a = [x],
-#        b = [[.5]])
+#        b = [[x/2, sp.sin(x)/3]])
+#bla.get_evdt_vs_M(
+#        fig_name = 'figs/extra_tst',
+#        ntraj = 64,
+#        X0 = np.ones(1,).astype(np.float),
+#        h0 = .5,
+#        exp_range = range(8))
+
+#bla = sde(
+#        x = [x],
+#        a = [x],
+#        b = [[.5, .25]])
 #bla.get_evdt_vs_M(
 #        fig_name = 'figs/add_evdt',
 #        ntraj = 64,
 #        X0 = np.ones(1,).astype(np.float),
 #        h0 = .5,
-#        exp_range = range(8))
-#
-#c = 0.0
-#v = sp.Symbol('v')
-#u = x**2 * (x**2 - 1 + c*x)
-#bla = sde(
-#        x = [x, v],
-#        a = [v, -u.diff(x) - v],
-#        b = [[.0], [.5]])
-#bla.get_evdt_vs_M(
-#        fig_name = 'figs/dwell_evdt',
-#        ntraj = 32,
-#        X0 = np.array([0., .0]).astype(np.float),
-#        h0 = .5,
-#        exp_range = range(8))
+#        exp_range = range(8),
+#        solver = ['Taylor_2p0_additive', 'explicit_1p5_additive'])
+
+c = 0.0
+v = sp.Symbol('v')
+u = x**2 * (x**2 - 1 + c*x)
+bla = sde(
+        x = [x, v],
+        a = [v, -u.diff(x) - v],
+        b = [[.01, .1], [.95, .3]])
+bla.get_evdt_vs_M(
+        fig_name = 'figs/dwell_evdt',
+        ntraj = 32,
+        X0 = np.array([0., .0]).astype(np.float),
+        h0 = .5,
+        solver = ['Taylor_2p0_additive', 'explicit_1p5_additive'],
+        exp_range = range(8))
 
