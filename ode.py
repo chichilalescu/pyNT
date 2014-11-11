@@ -34,6 +34,15 @@ class base_ODE(object):
         for t in range(1, nsteps + 1):
             X[t] = X[t-1] + self.rhs(X[t-1])*h
         return X
+    def Heun(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            k1 = self.rhs(X[t-1])
+            k2 = self.rhs(X[t-1] + h*k1)
+            X[t] = X[t-1] + h*(k1 + k2)/2
+        return X
     def Taylor2(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
                      X0.dtype)
