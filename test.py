@@ -27,8 +27,8 @@ from wiener import Wiener
 from sde import sde
 from ode import ode
 
-test_sde = False
-test_ode = True
+test_sde = True
+test_ode = False
 
 if test_sde:
     x = sp.Symbol('x')

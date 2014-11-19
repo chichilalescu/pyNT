@@ -63,35 +63,94 @@ def get_probability(
             'Probability density function for c = {0}.'.format(c))
     ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(probability))
     fig.savefig(figname + '.pdf', format = 'pdf')
+
+    fig = plt.figure(figsize = (6, 6))
+    ax = fig.add_subplot(111)
+    hist_list = []
+    for m in range(nbatches):
+        points = x[substeps*2:, 0, m].flatten()
+        ht, bt, bbt = ax.hist(points,
+                histtype = 'step',
+                bins = bins,
+                normed = True)
+        hist_list.append(ht)
+    fig.suptitle(
+            'Probability density function for c = {0}.'.format(c))
+    ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(probability))
+    fig.savefig(figname + '_perbatch.pdf', format = 'pdf')
+    allhist = np.array(hist_list)
+    fig = plt.figure(figsize = (6, 6))
+    ax = fig.add_subplot(111)
+    hist_list = []
+    ax.plot((bins[1:] + bins[:-1])/2, hist)
+    ax.plot((bins[1:] + bins[:-1])/2, np.min(allhist, axis = 0))
+    ax.plot((bins[1:] + bins[:-1])/2, np.max(allhist, axis = 0))
+    fig.suptitle(
+            'Probability density function for c = {0}.'.format(c))
+    ax.set_title('$\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(probability))
+    fig.savefig(figname + '_minmax.pdf', format = 'pdf')
     return probability, hist, bins
+
+def plot_traj(
+        c = 0.0,
+        T = 10.,
+        h0 = 1.,
+        substeps = 2**10,
+        nbatches = 10,
+        ntraj = 64,
+        figname = 'figs/dwell_traj'):
+    x = sp.Symbol('x')
+    v = sp.Symbol('v')
+    u = x**2 * (x**2 - 1 + c*x)
+    system = sde(
+            x = [x, v],
+            a = [v, -u.diff(x) - v],
+            b = [[.0], [.5]])
+
+    bla1 = Wiener(
+            nsteps = int(T / h0)*substeps,
+            dt = h0 / substeps,
+            noise_dimension = 1,
+            solution_shape = [nbatches, ntraj])
+    bla1.initialize()
+    x = system.EM(bla1, np.array([.0, .0]))
+
+    fig = plt.figure(figsize = (6, 6))
+    ax = fig.add_subplot(111)
+    ax.plot(bla1.get_time(), x[:, 0, 0])
+    fig.savefig(figname + '.pdf', format = 'pdf')
+    return None
+
+#plot_traj()
 
 p00, h00, b00 = get_probability(
         c = 0.0,
+        ntraj = 256,
         figname = 'figs/dwell00_PDF')
-p03, h03, b03 = get_probability(
-        c = 0.3,
-        figname = 'figs/dwell03_PDF')
-p06, h06, b06 = get_probability(
-        c = 0.6,
-        figname = 'figs/dwell06_PDF')
-p10, h10, b10 = get_probability(
-        c = 1.0,
-        figname = 'figs/dwell10_PDF')
-
-fig = plt.figure(figsize = (6, 6))
-ax = fig.add_subplot(111)
-ax.plot(.5*(b00[1:] + b00[:-1]),
-        h00,
-        label = '$c = 0.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p00))
-ax.plot(.5*(b03[1:] + b03[:-1]),
-        h03,
-        label = '$c = 0.3$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p03))
-ax.plot(.5*(b03[1:] + b06[:-1]),
-        h06,
-        label = '$c = 0.6$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p06))
-ax.plot(.5*(b10[1:] + b10[:-1]),
-        h10,
-        label = '$c = 1.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p10))
-ax.legend(loc = 'best')
-fig.savefig('figs/dwell_PDF.pdf', format = 'pdf')
+#p03, h03, b03 = get_probability(
+#        c = 0.3,
+#        figname = 'figs/dwell03_PDF')
+#p06, h06, b06 = get_probability(
+#        c = 0.6,
+#        figname = 'figs/dwell06_PDF')
+#p10, h10, b10 = get_probability(
+#        c = 1.0,
+#        figname = 'figs/dwell10_PDF')
+#
+#fig = plt.figure(figsize = (6, 6))
+#ax = fig.add_subplot(111)
+#ax.plot(.5*(b00[1:] + b00[:-1]),
+#        h00,
+#        label = '$c = 0.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p00))
+#ax.plot(.5*(b03[1:] + b03[:-1]),
+#        h03,
+#        label = '$c = 0.3$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p03))
+#ax.plot(.5*(b03[1:] + b06[:-1]),
+#        h06,
+#        label = '$c = 0.6$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p06))
+#ax.plot(.5*(b10[1:] + b10[:-1]),
+#        h10,
+#        label = '$c = 1.0$, $\\lim_{{t \\rightarrow \\infty}} P[X_t > 0] \\approx {0:.2g}$'.format(p10))
+#ax.legend(loc = 'best')
+#fig.savefig('figs/dwell_PDF.pdf', format = 'pdf')
 
