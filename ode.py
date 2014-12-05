@@ -100,12 +100,16 @@ class base_ODE(object):
             nsteps = 1,
             X0 = None,
             exp_range = range(8),
-            solver = ['Euler', 'Taylor2']):
+            solver = ['Euler', 'Taylor2'],
+            relative = True):
         x0 = [getattr(self, solver[0])(h0*2.**(-n), nsteps * 2**n, X0) for n in exp_range]
         x1 = [getattr(self, solver[1])(h0*2.**(-n), nsteps * 2**n, X0) for n in exp_range]
-        dist = [(np.average(np.abs(x0[p][-1] - x1[p][-1]), axis = 0) /
-                 np.average(np.abs(x0[p][-1]), axis = 0))
+        dist = [np.average(np.abs(x0[p][-1] - x1[p][-1]), axis = 0)
                 for p in range(len(x0))]
+        if relative:
+            print 'hello'
+            for p in range(len(x0)):
+                dist[p] /= np.average(np.abs(x0[p][-1]), axis = 0)
         err_vs_dt = np.zeros((len(x0), 4), dtype = X0.dtype)
         err_vs_dt[:, 0] = np.array([h0*2.**(-n) for n in exp_range])
         err_vs_dt[:, 2] = np.average(dist, axis = tuple(range(1, len(X0.shape))))
