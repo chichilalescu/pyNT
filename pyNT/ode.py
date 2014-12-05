@@ -119,7 +119,7 @@ class base_ODE(object):
     def get_system_dimension():
         return None
 
-class ode(base_ODE):
+class ODE(base_ODE):
     def __init__(
             self,
             x = None,

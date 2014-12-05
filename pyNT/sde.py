@@ -245,7 +245,7 @@ class base_SDE(object):
     def get_system_dimension():
         return None
 
-class sde(base_SDE):
+class SDE(base_SDE):
     def __init__(
             self,
             x = None,
