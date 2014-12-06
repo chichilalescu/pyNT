@@ -135,3 +135,63 @@ class ODE(base_ODE):
     def get_system_dimension(self):
         return len(self.x)
 
+class Hamiltonian(ODE):
+    def __init__(
+            self,
+            q = None,
+            p = None,
+            H = None):
+        self.q = q
+        self.p = p
+        self.H = H
+        super(Hamiltonian, self).__init__(
+                x = self.q + self.p,
+                f = ([ H.diff(pi) for pi in self.p] +
+                     [-H.diff(qi) for qi in self.q]))
+        self.degrees_of_freedom = len(self.q)
+        return None
+    def qrhs(self, x):
+        return np.array([self.rhs_func[k](*tuple(x))
+                         for k in range(self.degrees_of_freedom)])
+    def prhs(self, x):
+        return np.array([self.rhs_func[k](*tuple(x))
+                         for k in range(
+                             self.degrees_of_freedom,
+                             2*self.degrees_of_freedom)])
+    def CM2(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            X[t] = X[t-1]
+            X[t, :self.degrees_of_freedom] += 0.5*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] +=     h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += 0.5*h*self.qrhs(X[t])
+        return X
+    def CM4(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        alpha5 =  0.082984406417405
+        alpha4 =  0.23399525073150
+        alpha3 = -0.40993371990193
+        alpha2 =  0.059762097006575
+        alpha1 =  0.37087741497958
+        alpha0 =  0.16231455076687
+        for t in range(1, nsteps + 1):
+            X[t] = X[t-1]
+            X[t, :self.degrees_of_freedom] += (       alpha5)*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] += (alpha5+alpha0)*h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += (alpha0+alpha4)*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] += (alpha4+alpha1)*h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += (alpha1+alpha3)*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] += (alpha3+alpha2)*h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += (alpha2+alpha2)*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] += (alpha2+alpha3)*h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += (alpha3+alpha1)*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] += (alpha1+alpha4)*h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += (alpha4+alpha0)*h*self.qrhs(X[t])
+            X[t, self.degrees_of_freedom:] += (alpha0+alpha5)*h*self.prhs(X[t])
+            X[t, :self.degrees_of_freedom] += (alpha5       )*h*self.qrhs(X[t])
+        return X
+
