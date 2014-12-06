@@ -149,6 +149,99 @@ class Hamiltonian(ODE):
                 f = ([ H.diff(pi) for pi in self.p] +
                      [-H.diff(qi) for qi in self.q]))
         self.degrees_of_freedom = len(self.q)
+        # CM2 coefficients
+        self.CM2_coeffs = [0.5, 1.0, 0.5]
+        # CM4 coefficients
+        alpha5 =  0.082984406417405
+        alpha4 =  0.23399525073150
+        alpha3 = -0.40993371990193
+        alpha2 =  0.059762097006575
+        alpha1 =  0.37087741497958
+        alpha0 =  0.16231455076687
+        self.CM4_coeffs = [       alpha5,
+                           alpha5+alpha0,
+                           alpha0+alpha4,
+                           alpha4+alpha1,
+                           alpha1+alpha3,
+                           alpha3+alpha2,
+                           alpha2+alpha2,
+                           alpha2+alpha3,
+                           alpha3+alpha1,
+                           alpha1+alpha4,
+                           alpha4+alpha0,
+                           alpha0+alpha5,
+                           alpha5       ]
+        # CM6 coefficients
+        gamma1 =  0.39216144400731413927925056
+        gamma2 =  0.33259913678935943859974864
+        gamma3 = -0.70624617255763935980996482
+        gamma4 =  0.08221359629355080023149045
+        gamma5 =  0.79854399093482996339895035
+        self.CM6_coeffs = [
+            gamma1*.5,
+            gamma1,
+            (gamma1 + gamma2)*.5,
+            gamma2,
+            (gamma2 + gamma3)*.5,
+            gamma3,
+            (gamma3 + gamma4)*.5,
+            gamma4,
+            (gamma4 + gamma5)*.5,
+            gamma5,
+            (gamma5 + gamma4)*.5,
+            gamma4,
+            (gamma4 + gamma3)*.5,
+            gamma3,
+            (gamma3 + gamma2)*.5,
+            gamma2,
+            (gamma2 + gamma1)*.5,
+            gamma1,
+            gamma1*.5]
+        # CM8 coefficients
+        gamma1 =  0.13020248308889008087881763
+        gamma2 =  0.56116298177510838456196441
+        gamma3 = -0.38947496264484728640807860
+        gamma4 =  0.15884190655515560089621075
+        gamma5 = -0.39590389413323757733623154
+        gamma6 =  0.18453964097831570709183254
+        gamma7 =  0.25837438768632204729397911
+        gamma8 =  0.29501172360931029887096624
+        gamma9 = -0.60550853383003451169892108
+        self.CM8_coeffs = [(gamma1*0.5),
+                           (gamma1),
+                           ((gamma1+gamma2)*0.5),
+                           (gamma2),
+                           ((gamma2+gamma3)*0.5),
+                           (gamma3),
+                           ((gamma3+gamma4)*0.5),
+                           (gamma4),
+                           ((gamma4+gamma5)*0.5),
+                           (gamma5),
+                           ((gamma5+gamma6)*0.5),
+                           (gamma6),
+                           ((gamma6+gamma7)*0.5),
+                           (gamma7),
+                           ((gamma7+gamma8)*0.5),
+                           (gamma8),
+                           ((gamma8+gamma9)*0.5),
+                           (gamma9),
+                           ((gamma9+gamma8)*0.5),
+                           (gamma8),
+                           ((gamma8+gamma7)*0.5),
+                           (gamma7),
+                           ((gamma7+gamma6)*0.5),
+                           (gamma6),
+                           ((gamma6+gamma5)*0.5),
+                           (gamma5),
+                           ((gamma5+gamma4)*0.5),
+                           (gamma4),
+                           ((gamma4+gamma3)*0.5),
+                           (gamma3),
+                           ((gamma3+gamma2)*0.5),
+                           (gamma2),
+                           ((gamma2+gamma1)*0.5),
+                           (gamma1),
+                           (gamma1*0.5)]
         return None
     def qrhs(self, x):
         return np.array([self.rhs_func[k](*tuple(x))
@@ -172,26 +265,33 @@ class Hamiltonian(ODE):
         X = np.zeros((nsteps+1,) + X0.shape,
                      X0.dtype)
         X[0, :] = X0
-        alpha5 =  0.082984406417405
-        alpha4 =  0.23399525073150
-        alpha3 = -0.40993371990193
-        alpha2 =  0.059762097006575
-        alpha1 =  0.37087741497958
-        alpha0 =  0.16231455076687
         for t in range(1, nsteps + 1):
             X[t] = X[t-1]
-            X[t, :self.degrees_of_freedom] += (       alpha5)*h*self.qrhs(X[t])
-            X[t, self.degrees_of_freedom:] += (alpha5+alpha0)*h*self.prhs(X[t])
-            X[t, :self.degrees_of_freedom] += (alpha0+alpha4)*h*self.qrhs(X[t])
-            X[t, self.degrees_of_freedom:] += (alpha4+alpha1)*h*self.prhs(X[t])
-            X[t, :self.degrees_of_freedom] += (alpha1+alpha3)*h*self.qrhs(X[t])
-            X[t, self.degrees_of_freedom:] += (alpha3+alpha2)*h*self.prhs(X[t])
-            X[t, :self.degrees_of_freedom] += (alpha2+alpha2)*h*self.qrhs(X[t])
-            X[t, self.degrees_of_freedom:] += (alpha2+alpha3)*h*self.prhs(X[t])
-            X[t, :self.degrees_of_freedom] += (alpha3+alpha1)*h*self.qrhs(X[t])
-            X[t, self.degrees_of_freedom:] += (alpha1+alpha4)*h*self.prhs(X[t])
-            X[t, :self.degrees_of_freedom] += (alpha4+alpha0)*h*self.qrhs(X[t])
-            X[t, self.degrees_of_freedom:] += (alpha0+alpha5)*h*self.prhs(X[t])
-            X[t, :self.degrees_of_freedom] += (alpha5       )*h*self.qrhs(X[t])
+            X[t, :self.degrees_of_freedom] += self.CM4_coeffs[0]*h*self.qrhs(X[t])
+            for i in range(1, len(self.CM4_coeffs), 2):
+                X[t, self.degrees_of_freedom:] += self.CM4_coeffs[i  ]*h*self.prhs(X[t])
+                X[t, :self.degrees_of_freedom] += self.CM4_coeffs[i+1]*h*self.qrhs(X[t])
+        return X
+    def CM6(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            X[t] = X[t-1]
+            X[t, :self.degrees_of_freedom] += self.CM6_coeffs[0]*h*self.qrhs(X[t])
+            for i in range(1, len(self.CM6_coeffs), 2):
+                X[t, self.degrees_of_freedom:] += self.CM6_coeffs[i  ]*h*self.prhs(X[t])
+                X[t, :self.degrees_of_freedom] += self.CM6_coeffs[i+1]*h*self.qrhs(X[t])
+        return X
+    def CM8(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            X[t] = X[t-1]
+            X[t, :self.degrees_of_freedom] += self.CM8_coeffs[0]*h*self.qrhs(X[t])
+            for i in range(1, len(self.CM8_coeffs), 2):
+                X[t, self.degrees_of_freedom:] += self.CM8_coeffs[i  ]*h*self.prhs(X[t])
+                X[t, :self.degrees_of_freedom] += self.CM8_coeffs[i+1]*h*self.qrhs(X[t])
         return X
 
