@@ -34,6 +34,48 @@ class base_ODE(object):
         for t in range(1, nsteps + 1):
             X[t] = X[t-1] + self.rhs(X[t-1])*h
         return X
+    def EE2(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            X1 = X[t-1] + self.rhs(X[t-1])*h
+            X2 = X[t-1] + self.rhs(X[t-1])*h*0.5
+            X2 += self.rhs(X2)*h*0.5
+            X[t] = 2*X2 - X1
+        return X
+    def EE3(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            F = self.rhs(X[t-1])
+            X1 = X[t-1] + F*h
+            X2 = X[t-1] + F*h*0.5
+            X2 += self.rhs(X2)*h*0.5
+            X3 = X[t-1] + F*h/3
+            X3 += self.rhs(X3)*h/3
+            X3 += self.rhs(X3)*h/3
+            X[t] = 4.5*X3 - 4*X2 + 0.5*X1
+        return X
+    def EE4(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            F = self.rhs(X[t-1])
+            X1 = X[t-1] + F*h
+            X2 = X[t-1] + F*h*0.5
+            X2 += self.rhs(X2)*h*0.5
+            X3 = X[t-1] + F*h/3
+            X3 += self.rhs(X3)*h/3
+            X3 += self.rhs(X3)*h/3
+            X4 = X[t-1] + F*h/4
+            X4 += self.rhs(X4)*h/4
+            X4 += self.rhs(X4)*h/4
+            X4 += self.rhs(X4)*h/4
+            X[t] = 32*X4/3. - 13.5*X3 + 4*X2 - X1/6
+        return X
     def Heun(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
                      X0.dtype)
@@ -107,7 +149,6 @@ class base_ODE(object):
         dist = [np.average(np.abs(x0[p][-1] - x1[p][-1]), axis = 0)
                 for p in range(len(x0))]
         if relative:
-            print 'hello'
             for p in range(len(x0)):
                 dist[p] /= np.average(np.abs(x0[p][-1]), axis = 0)
         err_vs_dt = np.zeros((len(x0), 4), dtype = X0.dtype)
