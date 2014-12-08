@@ -128,11 +128,13 @@ class base_ODE(object):
                            for j in range(d))
                        for i in range(d)]
             diffx.append(newdiff)
-            diffxnum.append([sp.utilities.lambdify(tuple(self.x),diffx[-1][i], np)
-                             for i in range(d)])
+            diffxnum.append(
+                [sp.utilities.lambdify(tuple(self.x),diffx[-1][i], np)
+                 for i in range(d)])
         for t in range(1, nsteps+1):
-            terms = [np.array([diffxnum[i][j](*tuple(X[t-1]))
-                               for j in range(d)])*(h**(i+1))/sp.factorial(i+1)
+            terms = [(np.array([diffxnum[i][j](*tuple(X[t-1]))
+                               for j in range(d)]) *
+                      (h**(i+1))/sp.factorial(i+1))
                      for i in range(4)]
             X[t] = X[t-1] + sum(terms)
         return X
@@ -158,10 +160,12 @@ class base_ODE(object):
         err_vs_dt[:, 2] = np.average(
             dist,
             axis = tuple(range(1, len(X0.shape))))
-        err_vs_dt[:, 1] = (err_vs_dt[:, 2] -
-                           np.min(dist, axis = tuple(range(1, len(X0.shape)))))
-        err_vs_dt[:, 3] = (np.max(dist, axis = tuple(range(1, len(X0.shape)))) -
-                           err_vs_dt[:, 2])
+        err_vs_dt[:, 1] = (
+            err_vs_dt[:, 2] -
+            np.min(dist, axis = tuple(range(1, len(X0.shape)))))
+        err_vs_dt[:, 3] = (
+            np.max(dist, axis = tuple(range(1, len(X0.shape)))) -
+            err_vs_dt[:, 2])
         return err_vs_dt
     def get_system_dimension():
         return None
@@ -205,19 +209,20 @@ class Hamiltonian(ODE):
         alpha2 =  0.059762097006575
         alpha1 =  0.37087741497958
         alpha0 =  0.16231455076687
-        self.CM4_coeffs = [       alpha5,
-                           alpha5+alpha0,
-                           alpha0+alpha4,
-                           alpha4+alpha1,
-                           alpha1+alpha3,
-                           alpha3+alpha2,
-                           alpha2+alpha2,
-                           alpha2+alpha3,
-                           alpha3+alpha1,
-                           alpha1+alpha4,
-                           alpha4+alpha0,
-                           alpha0+alpha5,
-                           alpha5       ]
+        self.CM4_coeffs = [
+                   alpha5,
+            alpha5+alpha0,
+            alpha0+alpha4,
+            alpha4+alpha1,
+            alpha1+alpha3,
+            alpha3+alpha2,
+            alpha2+alpha2,
+            alpha2+alpha3,
+            alpha3+alpha1,
+            alpha1+alpha4,
+            alpha4+alpha0,
+            alpha0+alpha5,
+            alpha5       ]
         # CM6 coefficients
         gamma1 =  0.39216144400731413927925056
         gamma2 =  0.33259913678935943859974864
@@ -254,41 +259,42 @@ class Hamiltonian(ODE):
         gamma7 =  0.25837438768632204729397911
         gamma8 =  0.29501172360931029887096624
         gamma9 = -0.60550853383003451169892108
-        self.CM8_coeffs = [(gamma1*0.5),
-                           (gamma1),
-                           ((gamma1+gamma2)*0.5),
-                           (gamma2),
-                           ((gamma2+gamma3)*0.5),
-                           (gamma3),
-                           ((gamma3+gamma4)*0.5),
-                           (gamma4),
-                           ((gamma4+gamma5)*0.5),
-                           (gamma5),
-                           ((gamma5+gamma6)*0.5),
-                           (gamma6),
-                           ((gamma6+gamma7)*0.5),
-                           (gamma7),
-                           ((gamma7+gamma8)*0.5),
-                           (gamma8),
-                           ((gamma8+gamma9)*0.5),
-                           (gamma9),
-                           ((gamma9+gamma8)*0.5),
-                           (gamma8),
-                           ((gamma8+gamma7)*0.5),
-                           (gamma7),
-                           ((gamma7+gamma6)*0.5),
-                           (gamma6),
-                           ((gamma6+gamma5)*0.5),
-                           (gamma5),
-                           ((gamma5+gamma4)*0.5),
-                           (gamma4),
-                           ((gamma4+gamma3)*0.5),
-                           (gamma3),
-                           ((gamma3+gamma2)*0.5),
-                           (gamma2),
-                           ((gamma2+gamma1)*0.5),
-                           (gamma1),
-                           (gamma1*0.5)]
+        self.CM8_coeffs = [
+            (gamma1*0.5),
+            (gamma1),
+            ((gamma1+gamma2)*0.5),
+            (gamma2),
+            ((gamma2+gamma3)*0.5),
+            (gamma3),
+            ((gamma3+gamma4)*0.5),
+            (gamma4),
+            ((gamma4+gamma5)*0.5),
+            (gamma5),
+            ((gamma5+gamma6)*0.5),
+            (gamma6),
+            ((gamma6+gamma7)*0.5),
+            (gamma7),
+            ((gamma7+gamma8)*0.5),
+            (gamma8),
+            ((gamma8+gamma9)*0.5),
+            (gamma9),
+            ((gamma9+gamma8)*0.5),
+            (gamma8),
+            ((gamma8+gamma7)*0.5),
+            (gamma7),
+            ((gamma7+gamma6)*0.5),
+            (gamma6),
+            ((gamma6+gamma5)*0.5),
+            (gamma5),
+            ((gamma5+gamma4)*0.5),
+            (gamma4),
+            ((gamma4+gamma3)*0.5),
+            (gamma3),
+            ((gamma3+gamma2)*0.5),
+            (gamma2),
+            ((gamma2+gamma1)*0.5),
+            (gamma1),
+            (gamma1*0.5)]
         return None
     def qrhs(self, x):
         return np.array([self.rhs_func[k](*tuple(x))
@@ -342,9 +348,12 @@ class Hamiltonian(ODE):
         X[0, :] = X0
         for t in range(1, nsteps + 1):
             X[t] = X[t-1]
-            X[t, :self.degrees_of_freedom] += self.CM8_coeffs[0]*h*self.qrhs(X[t])
+            X[t, :self.degrees_of_freedom] += (
+                self.CM8_coeffs[0]*h*self.qrhs(X[t]))
             for i in range(1, len(self.CM8_coeffs), 2):
-                X[t, self.degrees_of_freedom:] += self.CM8_coeffs[i  ]*h*self.prhs(X[t])
-                X[t, :self.degrees_of_freedom] += self.CM8_coeffs[i+1]*h*self.qrhs(X[t])
+                X[t, self.degrees_of_freedom:] += (
+                    self.CM8_coeffs[i  ]*h*self.prhs(X[t]))
+                X[t, :self.degrees_of_freedom] += (
+                    self.CM8_coeffs[i+1]*h*self.qrhs(X[t]))
         return X
 
