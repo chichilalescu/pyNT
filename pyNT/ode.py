@@ -21,7 +21,8 @@
 
 import numpy as np
 import sympy as sp
-import matplotlib.pyplot as plt
+from matplotlib import _cntr as cntr
+
 from wiener import Wiener, get_t1ma_nm1
 
 class base_ODE(object):
@@ -404,4 +405,22 @@ class Hamiltonian(ODE):
                 X[t, :self.degrees_of_freedom] += (
                     self.CM8_coeffs[i+1]*h*self.qrhs(X[t]))
         return X
+
+def get_stability_region(
+        solver_list = ['Euler'],
+        xgrid = (-11, 1, 200),
+        ygrid = (- 6, 6, 200)):
+    Y, X = np.mgrid[ygrid[0]:ygrid[1]:ygrid[2]*1j,
+                    xgrid[0]:xgrid[1]:xgrid[2]*1j]
+    Z = X.astype(np.float64) + 1j*Y.astype(np.float64)
+    X0 = np.ones((1, ygrid[2], xgrid[2]), dtype = np.complex128)
+    x = sp.Symbol('x')
+    tst_sys = ODE(x = [x], f = [x])
+    contour_list = []
+    for solver in solver_list:
+        traj = getattr(tst_sys, solver)(h = Z, nsteps = 1, X0 = X0)
+        bla = cntr.Cntr(X, Y, np.abs(traj[1, 0]))
+        res = bla.trace(1.0)
+        contour_list.append(res[:len(res)/2])
+    return contour_list
 
