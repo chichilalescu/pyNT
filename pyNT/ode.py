@@ -144,8 +144,10 @@ class base_ODE(object):
             exp_range = range(8),
             solver = ['Euler', 'Taylor2'],
             relative = True):
-        x0 = [getattr(self, solver[0])(h0*2.**(-n), nsteps * 2**n, X0) for n in exp_range]
-        x1 = [getattr(self, solver[1])(h0*2.**(-n), nsteps * 2**n, X0) for n in exp_range]
+        x0 = [getattr(self, solver[0])(h0*2.**(-n), nsteps * 2**n, X0)
+                for n in exp_range]
+        x1 = [getattr(self, solver[1])(h0*2.**(-n), nsteps * 2**n, X0)
+                for n in exp_range]
         dist = [np.average(np.abs(x0[p][-1] - x1[p][-1]), axis = 0)
                 for p in range(len(x0))]
         if relative:
@@ -153,9 +155,13 @@ class base_ODE(object):
                 dist[p] /= np.average(np.abs(x0[p][-1]), axis = 0)
         err_vs_dt = np.zeros((len(x0), 4), dtype = X0.dtype)
         err_vs_dt[:, 0] = np.array([h0*2.**(-n) for n in exp_range])
-        err_vs_dt[:, 2] = np.average(dist, axis = tuple(range(1, len(X0.shape))))
-        err_vs_dt[:, 1] = err_vs_dt[:, 2] - np.min(dist, axis = tuple(range(1, len(X0.shape))))
-        err_vs_dt[:, 3] = np.max(dist, axis = tuple(range(1, len(X0.shape)))) - err_vs_dt[:, 2]
+        err_vs_dt[:, 2] = np.average(
+            dist,
+            axis = tuple(range(1, len(X0.shape))))
+        err_vs_dt[:, 1] = (err_vs_dt[:, 2] -
+                           np.min(dist, axis = tuple(range(1, len(X0.shape)))))
+        err_vs_dt[:, 3] = (np.max(dist, axis = tuple(range(1, len(X0.shape)))) -
+                           err_vs_dt[:, 2])
         return err_vs_dt
     def get_system_dimension():
         return None
@@ -308,10 +314,13 @@ class Hamiltonian(ODE):
         X[0, :] = X0
         for t in range(1, nsteps + 1):
             X[t] = X[t-1]
-            X[t, :self.degrees_of_freedom] += self.CM4_coeffs[0]*h*self.qrhs(X[t])
+            X[t, :self.degrees_of_freedom] += (
+                self.CM4_coeffs[0]*h*self.qrhs(X[t]))
             for i in range(1, len(self.CM4_coeffs), 2):
-                X[t, self.degrees_of_freedom:] += self.CM4_coeffs[i  ]*h*self.prhs(X[t])
-                X[t, :self.degrees_of_freedom] += self.CM4_coeffs[i+1]*h*self.qrhs(X[t])
+                X[t, self.degrees_of_freedom:] += (
+                    self.CM4_coeffs[i  ]*h*self.prhs(X[t]))
+                X[t, :self.degrees_of_freedom] += (
+                    self.CM4_coeffs[i+1]*h*self.qrhs(X[t]))
         return X
     def CM6(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
@@ -319,10 +328,13 @@ class Hamiltonian(ODE):
         X[0, :] = X0
         for t in range(1, nsteps + 1):
             X[t] = X[t-1]
-            X[t, :self.degrees_of_freedom] += self.CM6_coeffs[0]*h*self.qrhs(X[t])
+            X[t, :self.degrees_of_freedom] += (
+                self.CM6_coeffs[0]*h*self.qrhs(X[t]))
             for i in range(1, len(self.CM6_coeffs), 2):
-                X[t, self.degrees_of_freedom:] += self.CM6_coeffs[i  ]*h*self.prhs(X[t])
-                X[t, :self.degrees_of_freedom] += self.CM6_coeffs[i+1]*h*self.qrhs(X[t])
+                X[t, self.degrees_of_freedom:] += (
+                    self.CM6_coeffs[i  ]*h*self.prhs(X[t]))
+                X[t, :self.degrees_of_freedom] += (
+                    self.CM6_coeffs[i+1]*h*self.qrhs(X[t]))
         return X
     def CM8(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
