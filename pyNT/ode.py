@@ -19,11 +19,36 @@
 #                                                                     #
 #######################################################################
 
+from types import MethodType
+
 import numpy as np
 import sympy as sp
 from matplotlib import _cntr as cntr
 
 from wiener import Wiener, get_t1ma_nm1
+
+def factor_list(nl):
+    f = 1
+    for n in nl:
+        f *= n
+    return f
+
+def get_zeta_coeff_direct(nl):
+    cl = []
+    order = len(nl)
+    for n in nl:
+        cnum = n**(order-1)
+        cden = 1.0
+        nlf = factor_list(nl)
+        for m in nl:
+            if m != n:
+                cden *= (n-m)
+        cl.append(cnum/cden)
+    return cl
+
+def add_EE_method_to_ODE(
+        step_list = [1, 2, 3, 4]):
+    return None
 
 class base_ODE(object):
     def __init__(self):
@@ -35,16 +60,32 @@ class base_ODE(object):
         for t in range(1, nsteps + 1):
             X[t] = X[t-1] + self.rhs(X[t-1])*h
         return X
-    def EE2(self, h, nsteps, X0):
-        X = np.zeros((nsteps+1,) + X0.shape,
-                     X0.dtype)
-        X[0, :] = X0
-        for t in range(1, nsteps + 1):
-            X1 = X[t-1] + self.rhs(X[t-1])*h
-            X2 = X[t-1] + self.rhs(X[t-1])*h*0.5
-            X2 += self.rhs(X2)*h*0.5
-            X[t] = 2*X2 - X1
-        return X
+    def add_EE(
+            self,
+            step_list = [1, 2]):
+        coefflist = get_zeta_coeff_direct(step_list)
+        func_name = 'EE'
+        for step in step_list:
+            func_name += '_{0}'.format(step)
+        func_txt = 'def ' + func_name
+        func_txt += ('(self, h, nsteps, X0):\n' +
+                     '    X = np.zeros((nsteps+1,) + X0.shape, X0.dtype)\n' +
+                     '    X[0, :] = X0\n' +
+                     '    for t in range(1, nsteps+1):\n'
+                     '        F = self.rhs(X[t-1])\n')
+        for step in step_list:
+            func_txt += '        X{0} = X[t-1] + F*h/{0}\n'.format(step)
+            for i in range(1, step):
+                func_txt += '        X{0} += self.rhs(X{0})*h/{0}\n'.format(step)
+        func_txt += '        X[t] = '
+        for i in range(len(step_list) - 1):
+            func_txt += 'X{0}*{1} + '.format(step_list[i], coefflist[i])
+        func_txt += 'X{0}*{1}\n'.format(step_list[-1], coefflist[-1])
+        func_txt += '    return X\n'
+        exec(func_txt)
+        exec('func = {0}'.format(func_name))
+        setattr(type(self), func_name, MethodType(func, None, type(self)))
+        return func_name
     def EE3(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
                      X0.dtype)
