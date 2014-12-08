@@ -63,6 +63,8 @@ class base_ODE(object):
     def add_EE(
             self,
             step_list = [1, 2]):
+        # got this working thanks to the tutorial at
+        # http://www.ianlewis.org/en/dynamically-adding-method-classes-or-class-instanc
         coefflist = get_zeta_coeff_direct(step_list)
         func_name = 'EE'
         for step in step_list:
