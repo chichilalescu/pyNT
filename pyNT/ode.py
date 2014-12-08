@@ -76,6 +76,7 @@ class base_ODE(object):
             X4 += self.rhs(X4)*h/4
             X4 += self.rhs(X4)*h/4
             X[t] = 32*X4/3. - 13.5*X3 + 4*X2 - X1/6
+        return X
     def EE4_alt(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
                      X0.dtype)
