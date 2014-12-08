@@ -75,6 +75,27 @@ class base_ODE(object):
             X4 += self.rhs(X4)*h/4
             X4 += self.rhs(X4)*h/4
             X[t] = 32*X4/3. - 13.5*X3 + 4*X2 - X1/6
+    def EE4_alt(self, h, nsteps, X0):
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            F = self.rhs(X[t-1])
+            X1 = X[t-1] + F*h
+            X2 = X[t-1] + F*h*0.5
+            X2 += self.rhs(X2)*h*0.5
+            X3 = X[t-1] + F*h/3
+            X3 += self.rhs(X3)*h/3
+            X3 += self.rhs(X3)*h/3
+            X5 = X[t-1] + F*h/5
+            X5 += self.rhs(X5)*h/5
+            X5 += self.rhs(X5)*h/5
+            X5 += self.rhs(X5)*h/5
+            X5 += self.rhs(X5)*h/5
+            X[t] = (- 0.125*X1 +
+                    2.6666666666666665*X2
+                    - 6.75*X3 +
+                    5.208333333333333*X5)
         return X
     def Heun(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
@@ -95,6 +116,33 @@ class base_ODE(object):
             k3 = self.rhs(X[t-1] + h*k2/2)
             k4 = self.rhs(X[t-1] + h*k3)
             X[t] = X[t-1] + h*(k1 + 2*(k2+k3) + k4)/6
+        return X
+    def SSPRK104(self, h, nsteps, X0):
+        # shamelessly copied coefficients from nodepy example notebook
+        X = np.zeros((nsteps+1,) + X0.shape,
+                     X0.dtype)
+        X[0, :] = X0
+        for t in range(1, nsteps + 1):
+            k1 = self.rhs(X[t-1])
+            k2 = self.rhs(X[t-1] + h*k1/6)
+            k3 = self.rhs(X[t-1] + h*(k1 + k2)/6)
+            k4 = self.rhs(X[t-1] + h*(k1 + k2 + k3)/6)
+            k5 = self.rhs(X[t-1] + h*(k1 + k2 + k3 + k4)/6)
+            k6 = self.rhs(X[t-1] + h*(k1 + k2 + k3 + k4 + k5)/15)
+            k7 = self.rhs(X[t-1] + h*(
+                (k1 + k2 + k3 + k4 + k5)/15 +
+                 k6/6))
+            k8 = self.rhs(X[t-1] + h*(
+                (k1 + k2 + k3 + k4 + k5)/15 +
+                (k6 + k7)/6))
+            k9 = self.rhs(X[t-1] + h*(
+                (k1 + k2 + k3 + k4 + k5)/15 +
+                (k6 + k7 + k8)/6))
+            k10= self.rhs(X[t-1] + h*(
+                (k1 + k2 + k3 + k4 + k5)/15 +
+                (k6 + k7 + k8 + k9)/6))
+            X[t] = X[t-1] + h*(
+                k1 + k2 + k3 + k4 + k5 + k6 + k7 + k8 + k9 + k10)/10
         return X
     def Taylor2(self, h, nsteps, X0):
         X = np.zeros((nsteps+1,) + X0.shape,
