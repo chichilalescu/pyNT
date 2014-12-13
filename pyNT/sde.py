@@ -22,7 +22,7 @@
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
-from wiener import Wiener, get_t1ma_nm1
+from .wiener import Wiener, get_t1ma_nm1
 
 def Lj(x, a, b, f, j):
     return sum(b[k][j]*sp.diff(f, x[k])

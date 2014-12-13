@@ -25,8 +25,6 @@ import numpy as np
 import sympy as sp
 from matplotlib import _cntr as cntr
 
-from wiener import Wiener, get_t1ma_nm1
-
 def factor_list(nl):
     f = 1
     for n in nl:
