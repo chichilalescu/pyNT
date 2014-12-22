@@ -22,7 +22,7 @@
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
-from wiener import Wiener, get_t1ma_nm1
+from .wiener import Wiener, get_t1ma_nm1
 
 def Lj(x, a, b, f, j):
     return sum(b[k][j]*sp.diff(f, x[k])
@@ -189,7 +189,7 @@ class base_SDE(object):
         return X
     def get_evdt_vs_M(
             self,
-            fig_name = 'tst',
+            fig_name = None,
             ntraj = 32,
             X0 = None,
             h0 = 2.**(-3),
@@ -238,14 +238,15 @@ class base_SDE(object):
         ax.set_yscale('log')
         ax.set_title('Distance between {0} and {1} vs time step'.format(solver[0], solver[1]))
         ax.legend(loc = 'best')
-        fig.savefig(fig_name + '.pdf', format = 'pdf')
+        if not type(fig_name) == type(None):
+            fig.savefig(fig_name + '.pdf', format = 'pdf')
         return dtlist, averr, deltae
     def get_noise_dimension():
         return None
     def get_system_dimension():
         return None
 
-class sde(base_SDE):
+class SDE(base_SDE):
     def __init__(
             self,
             x = None,

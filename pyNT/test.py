@@ -24,15 +24,15 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 from wiener import Wiener
-from sde import sde
-from ode import ode
+from sde import SDE
+from ode import ODE
 
 test_sde = True
 test_ode = False
 
 if test_sde:
     x = sp.Symbol('x')
-    bla = sde(
+    bla = SDE(
             x = [x],
             a = [x],
             b = [[x/2, sp.sin(x)/3]])
@@ -43,7 +43,7 @@ if test_sde:
             h0 = .5,
             exp_range = range(8))
 
-    bla = sde(
+    bla = SDE(
             x = [x],
             a = [x],
             b = [[.5, .25]])
@@ -58,7 +58,7 @@ if test_sde:
     c = 0.0
     v = sp.Symbol('v')
     u = x**2 * (x**2 - 1 + c*x)
-    bla = sde(
+    bla = SDE(
             x = [x, v],
             a = [v, -u.diff(x) - v],
             b = [[.01, .1], [.95, .3]])
@@ -80,7 +80,7 @@ if test_ode:
     lorenz_rhs = [sigma*(y - x),
                   x*(rho - z) - y,
                   x*y - beta*z]
-    bla = ode(
+    bla = ODE(
             x = [x, y, z],
             f = lorenz_rhs)
     X0 = 10*np.random.random((3, 128))

@@ -86,7 +86,7 @@ class Wiener:
             n = 2):
         new_object = Wiener(
                 dt = n*self.dt,
-                nsteps = self.nsteps/n,
+                nsteps = int(self.nsteps/n),
                 noise_dimension = self.noise_dimension,
                 solution_shape = self.solution_shape,
                 p = self.p)
