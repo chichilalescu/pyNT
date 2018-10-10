@@ -23,8 +23,8 @@ import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-from wiener import Wiener, get_t1ma_nm1
-from sde import sde
+from pyNT.wiener import Wiener, get_t1ma_nm1
+from pyNT.sde import SDE
 
 def get_probability(
         c = 0.0,
@@ -37,7 +37,7 @@ def get_probability(
     x = sp.Symbol('x')
     v = sp.Symbol('v')
     u = x**2 * (x**2 - 1 + c*x)
-    system = sde(
+    system = SDE(
             x = [x, v],
             a = [v, -u.diff(x) - v],
             b = [[.0], [.5]])
@@ -102,7 +102,7 @@ def plot_traj(
     x = sp.Symbol('x')
     v = sp.Symbol('v')
     u = x**2 * (x**2 - 1 + c*x)
-    system = sde(
+    system = SDE(
             x = [x, v],
             a = [v, -u.diff(x) - v],
             b = [[.0], [.5]])
